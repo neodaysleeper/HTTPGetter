@@ -1,53 +1,64 @@
 <?php
 
-require_once __DIR__ . '/../libs/IPSModule.php';
-
-class HTTPGetter extends IPSModule {
-    public function Create() {
-        // Beim Erstellen der Instanz ausgeführt
+class HTTPGetter extends IPSModule
+{
+    public function Create()
+    {
+        // Diese Funktion wird beim Erstellen der Instanz ausgeführt.
         parent::Create();
-        $this->RegisterPropertyString("WebhookName", "default_hook");
+        $this->RegisterPropertyString("WebhookName", "httpgetter"); // Standardname
     }
 
-    public function ApplyChanges() {
-        // Beim Anwenden der Änderungen ausgeführt
+    public function ApplyChanges()
+    {
+        // Diese Funktion wird beim Anwenden der Änderungen aufgerufen.
         parent::ApplyChanges();
-
-        // Webhook erstellen oder aktualisieren
-        $hook = "/" . $this->ReadPropertyString("WebhookName");
-        $this->RegisterHook($hook);
+        $this->RegisterWebhook($this->ReadPropertyString("WebhookName"));
     }
 
-    private function RegisterHook($WebHook) {
-        $hookID = @IPS_GetObjectIDByIdent($WebHook, $this->InstanceID);
-        if ($hookID === false) {
-            $hookID = IPS_CreateInstance("{6179ED6A-FC31-413C-BB8E-1204150CF376}"); // WebHook Instanz
-            IPS_SetParent($hookID, $this->InstanceID); // Unter diese Instanz verschieben
-            IPS_SetIdent($hookID, $WebHook);
-            IPS_SetName($hookID, "HTTP Getter Hook");
-            IPS_SetProperty($hookID, "Hook", $WebHook);
-            IPS_ApplyChanges($hookID);
+    private function RegisterWebhook($WebhookName)
+    {
+        $hook = "/hook/" . $WebhookName;
+        $id = @IPS_GetObjectIDByIdent($hook, 0);
+
+        if ($id === false) {
+            $id = IPS_CreateInstance("{6179ED6A-FC31-413C-BB8E-1204150CF376}"); // WebHook Instanz
+            IPS_SetIdent($id, $hook);
+            IPS_SetName($id, "Webhook " . $WebhookName);
+            IPS_SetParent($id, 0);
+            IPS_ApplyChanges($id);
         }
+
+        IPS_SetProperty($id, "Hook", $hook);
+        IPS_SetProperty($id, "TargetID", $this->InstanceID);
+        IPS_ApplyChanges($id);
     }
 
-    /**
-     * Die Funktion, die aufgerufen wird, wenn der WebHook ausgelöst wird.
-     */
-    public function ReceiveData($JSONString) {
+    public function ReceiveData($JSONString)
+    {
         $data = json_decode($JSONString, true);
+        IPS_LogMessage("HTTPGetter", print_r($data, true));
 
-        switch ($data['function']) {
-            case "ZW_SwitchMode":
-                ZW_SwitchMode($data['id'], $data['state']);
-                echo "Z-wave device with ID {$data['id']} was switched to {$data['state']}";
-                break;
-            case "ZW_DimSet":
-                ZW_DimSet($data['id'], intval($data['state']));
-                echo "Z-wave device with ID {$data['id']} was dimmed to {$data['state']}";
-                break;
-            default:
-                echo "The function '{$data['function']}' is not registered";
-                break;
+        if ($_IPS['SENDER'] == "WebHook") {
+            $user = htmlspecialchars($_GET['user']);
+            $password = htmlspecialchars($_GET['password']);
+            $id = intval($_GET['id']);
+            $function = htmlspecialchars($_GET['function']);
+            $state = htmlspecialchars($_GET['state']);
+
+            switch ($function) {
+                case "ZW_SwitchMode":
+                    ZW_SwitchMode($id, $state);
+                    echo "Z-Wave Gerät mit ID {$id} wurde auf {$state} geschaltet";
+                    break;
+                case "ZW_DimSet":
+                    ZW_DimSet($id, intval($state));
+                    echo "Z-Wave Gerät mit ID {$id} wurde gedimmt auf {$state}";
+                    break;
+                default:
+                    echo "Die Funktion '{$function}' ist nicht hinterlegt.";
+                    break;
+            }
         }
     }
 }
