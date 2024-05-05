@@ -8,11 +8,4 @@
   "compatibility": {
     "version": "5.0"
   },
-  "modules": [
-    {
-      "id": "{aeb27d70-e2d8-4c7e-9c7e-2b8f0b6f0d3c}",
-      "name": "HTTP Getter",
-      "prefix": "HTTPGET"
-    }
-  ]
 }
