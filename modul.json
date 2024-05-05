@@ -1,0 +1,11 @@
+{
+  "id": "HTTPGetter",
+  "name": "HTTP Getter",
+  "type": "Core",
+  "vendor": "Peter Watzling",
+  "aliases": "Neodaysleeper",
+  "parentRequirements": [],
+  "childRequirements": [],
+  "implemented": [],
+  "prefix": "HTTPGET"
+}
